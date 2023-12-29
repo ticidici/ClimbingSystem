@@ -23,12 +23,22 @@ class CLIMBINGSYSTEM_API UCustomMovementComponent : public UCharacterMovementCom
 {
 	GENERATED_BODY()
 
+public:
+	
+	UCustomMovementComponent();
+	
 protected:
 	
+#pragma region OverriddenFunction
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
+
+	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	
+#pragma endregion
+
 private:
 	
 #pragma region ClimbTraces
@@ -50,6 +60,8 @@ private:
 	void StartClimbing();
 	
 	void StopClimbing();
+
+	void PhysClimb(float deltaTime, int32 Iterations);
 	
 #pragma endregion
 
@@ -65,10 +77,13 @@ private:
 	TArray<TEnumAsByte<EObjectTypeQuery>> ClimbableSurfaceTraceTypes;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing", meta = (AllowPrivateAccess = "true"))
-	float ClimbCapsuleTraceRadius = 50.f;
+	float ClimbCapsuleTraceRadius;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing", meta = (AllowPrivateAccess = "true"))
-	float ClimbCapsuleTraceHalfHeight = 72.f;
+	float ClimbCapsuleTraceHalfHeight;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing", meta = (AllowPrivateAccess = "true"))
+	float MaxBrakeClimbDeceleration;
 	
 #pragma endregion
 
