@@ -13,10 +13,10 @@
 UCustomMovementComponent::UCustomMovementComponent()
 {
 	ClimbCapsuleTraceRadius = 50.f;
-	
 	ClimbCapsuleTraceHalfHeight = 72.f;
-
 	MaxBrakeClimbDeceleration = 400.f;
+	MaxClimbSpeed = 100.f;
+	MaxClimbAcceleration = 300.f;
 }
 
 void UCustomMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -55,6 +55,30 @@ void UCustomMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 	}
 	
 	Super::PhysCustom(deltaTime, Iterations);
+}
+
+float UCustomMovementComponent::GetMaxSpeed() const
+{
+	if(IsClimbing())
+	{
+		return MaxClimbSpeed;
+	}
+	else
+	{
+		return Super::GetMaxSpeed();
+	}
+}
+
+float UCustomMovementComponent::GetMaxAcceleration() const
+{
+	if(IsClimbing())
+	{
+		return MaxClimbAcceleration;
+	}
+	else
+	{
+		return Super::GetMaxAcceleration();
+	}
 }
 
 #pragma region ClimbTraces
@@ -170,11 +194,11 @@ void UCustomMovementComponent::StopClimbing()
 	SetMovementMode(MOVE_Falling);
 }
 
-void UCustomMovementComponent::PhysClimb(float deltaTime, int32 Iterations)
+void UCustomMovementComponent::PhysClimb(float DeltaTime, int32 Iterations)
 {
 	//based on PhysFlying, in the parent class
 	
-	if(deltaTime < MIN_TICK_TIME)
+	if(DeltaTime < MIN_TICK_TIME)
 	{
 		return;
 	}
@@ -190,32 +214,33 @@ void UCustomMovementComponent::PhysClimb(float deltaTime, int32 Iterations)
 	if(!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 	{
 		//Define max climb speed and acceleration
-		CalcVelocity(deltaTime, 0.f, true, MaxBrakeClimbDeceleration);
+		CalcVelocity(DeltaTime, 0.f, true, MaxBrakeClimbDeceleration);
 	}
 
-	ApplyRootMotionToVelocity(deltaTime);
+	ApplyRootMotionToVelocity(DeltaTime);
 	
 	FVector OldLocation = UpdatedComponent->GetComponentLocation();
-	const FVector Adjusted = Velocity * deltaTime;
+	const FVector Adjusted = Velocity * DeltaTime;
 	FHitResult Hit(1.f);
 
 	//Handle climb rotation
 	//Actually moves the character
-	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+	SafeMoveUpdatedComponent(Adjusted, GetClimbRotation(DeltaTime), true, Hit);
 
 	if(Hit.Time < 1.f)
 	{
 		//adjust and try again
-		HandleImpact(Hit, deltaTime, Adjusted);
+		HandleImpact(Hit, DeltaTime, Adjusted);
 		SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
 	}
 
 	if(!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 	{
-		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / deltaTime;
+		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / DeltaTime;
 	}
 
 	//Snap movement to climbable surfaces
+	SnapMovementToClimbableSurfaces(DeltaTime);
 }
 
 void UCustomMovementComponent::ProcessClimbableSurfaceInfo()
@@ -233,9 +258,33 @@ void UCustomMovementComponent::ProcessClimbableSurfaceInfo()
 
 	CurrentClimbableSurfaceLocation /= ClimbableSurfacesTracedResults.Num();
 	CurrentClimbableSurfaceNormal = CurrentClimbableSurfaceNormal.GetSafeNormal();
+}
 
-	Debug::Print(TEXT("ClimbableSurfaceLocation: ") + CurrentClimbableSurfaceLocation.ToCompactString(), FColor::Cyan, 1);
-	Debug::Print(TEXT("ClimbableSurfaceNormal: ") + CurrentClimbableSurfaceNormal.ToCompactString(), FColor::Red, 2);
+FQuat UCustomMovementComponent::GetClimbRotation(float DeltaTime)
+{
+	const FQuat CurrentQuat = UpdatedComponent->GetComponentQuat();
+
+	if(HasAnimRootMotion() || CurrentRootMotion.HasOverrideVelocity())
+	{
+		return CurrentQuat;
+	}
+
+	const FQuat TargetQuat = FRotationMatrix::MakeFromX(-CurrentClimbableSurfaceNormal).ToQuat();
+	
+	return FMath::QInterpTo(CurrentQuat, TargetQuat, DeltaTime, 5.f);
+	
+}
+
+void UCustomMovementComponent::SnapMovementToClimbableSurfaces(float DeltaTime)
+{
+	const FVector ComponentForward = UpdatedComponent->GetForwardVector();
+	const FVector ComponentLocation = UpdatedComponent->GetComponentLocation();
+
+	const FVector ProjectedCharacterToSurface = (CurrentClimbableSurfaceLocation - ComponentLocation).ProjectOnTo(ComponentForward);
+
+	const FVector SnapVector = -CurrentClimbableSurfaceNormal * ProjectedCharacterToSurface.Length();
+
+	UpdatedComponent->MoveComponent(SnapVector * DeltaTime * MaxClimbSpeed, UpdatedComponent->GetComponentQuat(), true);
 }
 
 bool UCustomMovementComponent::IsClimbing() const
