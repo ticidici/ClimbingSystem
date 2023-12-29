@@ -23,6 +23,7 @@ private:
 #pragma region ClimbTraces
 
 	TArray<FHitResult> DoCapsuleTraceMultiByObject(const FVector& Start, const FVector& End, bool bShowDebugShape = false);
+	FHitResult DoLineTraceSingleByObject(const FVector& Start, const FVector& End, bool bShowDebugShape = false);
 	
 #pragma endregion
 
@@ -31,13 +32,15 @@ private:
 
 	void TraceClimbableSurfaces();
 	
+	void TraceFromEyeHeight(float TraceDistance, float TraceStartOffset = 0.f);
+	
 #pragma endregion
 
 	
 #pragma region ClimbVariables
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing", meta = (AllowPrivateAccess = "true"))
-	TArray<TEnumAsByte<EObjectTypeQuery>> ClimbableSurfaceTraceType;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ClimbableSurfaceTraceTypes;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Movement: Climbing", meta = (AllowPrivateAccess = "true"))
 	float ClimbCapsuleTraceRadius = 50.f;
