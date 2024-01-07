@@ -30,6 +30,7 @@ void UCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	AssignShouldMove();
 	AssignIsFalling();
 	AssignIsClimbing();
+	AssignClimbVelocity();
 }
 
 void UCharacterAnimInstance::AssignGroundSpeed()
@@ -58,4 +59,9 @@ void UCharacterAnimInstance::AssignIsFalling()
 void UCharacterAnimInstance::AssignIsClimbing()
 {
 	bIsClimbing = CustomMovementComponent->IsClimbing();
+}
+
+void UCharacterAnimInstance::AssignClimbVelocity()
+{
+	ClimbVelocity = CustomMovementComponent->GetUnrotatedClimbVelocity();
 }
