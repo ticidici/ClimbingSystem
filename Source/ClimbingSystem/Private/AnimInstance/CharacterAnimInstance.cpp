@@ -29,6 +29,7 @@ void UCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	AssignAirSpeed();
 	AssignShouldMove();
 	AssignIsFalling();
+	AssignIsClimbing();
 }
 
 void UCharacterAnimInstance::AssignGroundSpeed()
@@ -52,4 +53,9 @@ void UCharacterAnimInstance::AssignShouldMove()
 void UCharacterAnimInstance::AssignIsFalling()
 {
 	bIsFalling = CustomMovementComponent->IsFalling();
+}
+
+void UCharacterAnimInstance::AssignIsClimbing()
+{
+	bIsClimbing = CustomMovementComponent->IsClimbing();
 }

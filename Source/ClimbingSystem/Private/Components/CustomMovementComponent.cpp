@@ -358,7 +358,10 @@ void UCustomMovementComponent::PlayClimbMontage(UAnimMontage* MontageToPlay)
 
 void UCustomMovementComponent::OnClimbMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	Debug::Print(TEXT("Climb montage ended"));
+	if(Montage == IdleToClimbMontage)
+	{
+		StartClimbing();
+	}
 }
 
 #pragma endregion
